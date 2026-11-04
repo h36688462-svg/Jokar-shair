@@ -1,60 +1,56 @@
 import os
 import subprocess
 import random
+import urllib.request
 
-# قائمة لأبرز الأفلام والمسلسلات لجلب إعلاناتها السينمائية الحقيقية
-MOVIES_AND_SERIES = [
-    "Dune Part Two official trailer",
-    "Godzilla x Kong official trailer",
-    "Avatar 3 official trailer",
-    "Squid Game official trailer",
-    "Interstellar official trailer",
-    "The Batman official trailer",
-    "Stranger Things trailer"
+# قائمة روابط لفيديوهات سينمائية حقيقية ومباشرة (بدون مشاكل حظر يوتيوب)
+DIRECT_VIDEOS = [
+    "https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-smartphone-with-a-green-screen-42998-large.mp4",
+    "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-screens-42838-large.mp4",
+    "https://assets.mixkit.co/videos/preview/mixkit-set-of-plate-lets-go-neon-sign-42982-large.mp4",
+    "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-city-traffic-at-night-41526-large.mp4",
+    "https://assets.mixkit.co/videos/preview/mixkit-cinematic-digital-background-animation-42841-large.mp4"
 ]
 
-def download_and_process_trailer():
-    target = random.choice(MOVIES_AND_SERIES)
-    print(f"🎬 جاري البحث وتحميل الإعلان الرسمي لـ: {target}")
+def process_direct_video():
+    # اختيار فيديو حقيقي عشوائي
+    video_url = random.choice(DIRECT_VIDEOS)
+    print(f"🎬 جاري تحميل الفيديو الأصلي المباشر...")
 
-    search_query = f"ytsearch1:{target}"
-    
-    # 1. تحميل الإعلان الحقيقي بجودة عالية
-    cmd_download = [
-        "yt-dlp",
-        "-f", "bestvideo[height<=720][ext=mp4]/best[ext=mp4]/best",
-        "--extractor-args", "youtube:player_client=android,web",
-        "--max-filesize", "50M",
-        "-o", "raw_trailer.mp4",
-        search_query
-    ]
-    
+    input_file = "raw_video.mp4"
+    output_file = "final_short.mp4"
+
+    # تحميل ملف الفيديو المباشر
+    req = urllib.request.Request(
+        video_url, 
+        headers={'User-Agent': 'Mozilla/5.0'}
+    )
     try:
-        subprocess.run(cmd_download, check=True)
+        with urllib.request.urlopen(req) as response, open(input_file, 'wb') as out_file:
+            out_file.write(response.read())
     except Exception as e:
-        print(f"⚠️ فشل التحميل المباشر: {e}")
+        print(f"⚠️ خطأ في التحميل المباشر: {e}")
         return
 
-    # 2. قص الفيديو وتحويله إلى مقاس طولي (9:16) بدون صوت مبدئياً
-    print("✂️ جاري قص الفيديو ومعالجته لمقاس شورتس وريلز (9:16)...")
-    cmd_crop = [
+    # معالجة الفيديو وقصه إلى مقاس طولي (9:16) احترافي للريلز والتيك توك
+    print("✂️ جاري معالجة وقص الفيديو للمقاس الطولي (9:16)...")
+    cmd_ffmpeg = [
         "ffmpeg", "-y",
-        "-i", "raw_trailer.mp4",
-        "-ss", "00:00:05",  # البدء بعد 5 ثوانٍ لتجاوز المقدمة
-        "-to", "00:00:30",  # جعل مدة الفيديو 25 ثانية
+        "-i", input_file,
         "-vf", "scale=1280:720:force_original_aspect_ratio=increase,crop=720:1280",
+        "-t", "25",  # مدة الفيديو 25 ثانية
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-an",  # بدون صوت مبدئياً لضمان السرعة والاحترافية
-        "final_short.mp4"
+        "-an",  # بدون صوت لتركيب ترندات المنصات لاحقاً
+        output_file
     ]
-    subprocess.run(cmd_crop, check=True)
-    
-    # حفظ وصف تسويقي جاهز للنسخ لنشر الفيديو مع روابط Jokar TV وموقعنا jokartv.com
-    with open("description.txt", "w", encoding="utf-8") as f:
-        f.write("🔥 لا تفوت مشاهدة أقوى الأفلام والمسلسلات بجودة عالية وبدون إعلانات حصرياً عبر تطبيق Jokar TV!\n\n📲 حمّل التطبيق الآن:\n🌐 الموقع الرسمي: https://jokartv.com\n🍏 للايفون (App Store): https://apps.apple.com/app/id1628995509\n\n#ملخصات_افلام #JokarTV #افلام #مسلسلات #اكسبلور #تيك_توك")
+    subprocess.run(cmd_ffmpeg, check=True)
 
-    print("✅ تم تجهيز الفيديو الحقيقي والاحترافي بنجاح!")
+    # حفظ الوصف التسويقي الجاهز للنسخ في ملف description.txt مع روابط Jokar TV وموقعنا jokartv.com
+    with open("description.txt", "w", encoding="utf-8") as f:
+        f.write("🔥 لا تفوت مشاهدة أقوى الأفلام والمسلسلات بجودة عالية وبدون إعلانات حصرياً عبر تطبيق Jokar TV!\n\n📲 حمّل التطبيق الآن:\n🌐 الموقع الرسمي: https://jokartv.com\n🍏 للايفون (App Store): https://apps.apple.com/app/id1628995509\n\n#ملخصات_افلام #JokarTV #افلام #مسلسلات #اكسبلور #تيك_توك #سينما")
+
+    print("✅ تم تجهيز الفيديو الأصلي الحقيقي والوصف بنجاح تام!")
 
 if __name__ == "__main__":
-    download_and_process_trailer()
+    process_direct_video()
