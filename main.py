@@ -14,7 +14,6 @@ MOVIES_AND_SERIES = [
 ]
 
 def download_and_process_trailer():
-    # اختيار فيلم أو مسلسل بشكل عشوائي
     target = random.choice(MOVIES_AND_SERIES)
     print(f"🎬 جاري البحث وتحميل الإعلان الرسمي لـ: {target}")
 
@@ -36,22 +35,22 @@ def download_and_process_trailer():
         print(f"⚠️ فشل التحميل المباشر: {e}")
         return
 
-    # 2. استخدام FFmpeg لقص الفيديو وتحويله إلى مقاس طولي (9:16) بدون صوت مبدئياً
+    # 2. قص الفيديو وتحويله إلى مقاس طولي (9:16) بدون صوت مبدئياً
     print("✂️ جاري قص الفيديو ومعالجته لمقاس شورتس وريلز (9:16)...")
     cmd_crop = [
         "ffmpeg", "-y",
         "-i", "raw_trailer.mp4",
-        "-ss", "00:00:05",  # البدء بعد 5 ثوانٍ لتجاوز الشعار والمقدمة
-        "-to", "00:00:30",  # جعل مدة الفيديو 25 ثانية فقط (مثالي للتيك توك والريلز)
+        "-ss", "00:00:05",  # البدء بعد 5 ثوانٍ لتجاوز المقدمة
+        "-to", "00:00:30",  # جعل مدة الفيديو 25 ثانية
         "-vf", "scale=1280:720:force_original_aspect_ratio=increase,crop=720:1280",
         "-c:v", "libx264",
-        "-preset", "fast",
-        "-an",  # كتم الصوت الأصلي مبدئياً (بدون تعليق صوتي)
+        "-preset", "ultrafast",
+        "-an",  # بدون صوت مبدئياً لضمان السرعة والاحترافية
         "final_short.mp4"
     ]
     subprocess.run(cmd_crop, check=True)
     
-    # حفظ وصف تسويقي جاهز للنسخ لنشر الفيديو مع روابط Jokar TV
+    # حفظ وصف تسويقي جاهز للنسخ لنشر الفيديو مع روابط Jokar TV وموقعنا jokartv.com
     with open("description.txt", "w", encoding="utf-8") as f:
         f.write("🔥 لا تفوت مشاهدة أقوى الأفلام والمسلسلات بجودة عالية وبدون إعلانات حصرياً عبر تطبيق Jokar TV!\n\n📲 حمّل التطبيق الآن:\n🌐 الموقع الرسمي: https://jokartv.com\n🍏 للايفون (App Store): https://apps.apple.com/app/id1628995509\n\n#ملخصات_افلام #JokarTV #افلام #مسلسلات #اكسبلور #تيك_توك")
 
