@@ -4,8 +4,8 @@ import subprocess
 import edge_tts
 from google import genai
 import random
+import time
 
-# قائمة الأفلام (يمكنك ترك فيلم واحد فقط لو أردت تجربته الآن)
 MOVIES = [
     "Jurassic Reborn 2025",
     "Jurassic World Rebirth 2025",
@@ -14,7 +14,7 @@ MOVIES = [
     "Alien Romulus"
 ]
 
-VOICE = "ar-SA-HamedNeural"  # صوت عربي رجالي احترافي ومجاني
+VOICE = "ar-SA-HamedNeural"
 
 async def generate_voice(text, output_file="voice.mp3"):
     communicate = edge_tts.Communicate(text, VOICE, rate="+5%")
@@ -28,11 +28,19 @@ def generate_script(movie_name):
     ابدأ بخطاف قوي يجذب الانتباه في أول جملة، ثم اذكر القصة باختصار وهل يستحق المشاهدة.
     اكتب النص العربي الذي سيُقرأ فقط بدون أي مقدمات أو توجيهات إخراجية أو رموز.
     """
-    response = client.models.generate_content(
-        model="gemini-3.8-flash",  # تم التحديث إلى النموذج الجديد المعتمد
-        contents=prompt,
-    )
-    return response.text.strip()
+    
+    # محاولة الاتصال مع إعادة المحاولة في حال الضغط (503)
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",  # تم الرجوع للنموذج الأسرع والأكثر استقراراً للطلبات السريعة
+                contents=prompt,
+            )
+            return response.text.strip()
+        except Exception as e:
+            print(f"⚠️ محاولة {attempt+1} فشلت بسبب ضغط السيرفر، إعادة المحاولة بعد ثوانٍ...")
+            time.sleep(5)
+    raise Exception("فشل الاتصال بـ Gemini بعد عدة محاولات بسبب الضغط.")
 
 def download_trailer(movie_name):
     search_query = f"ytsearch1:{movie_name} official trailer"
