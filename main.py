@@ -3,11 +3,9 @@ import asyncio
 import subprocess
 import edge_tts
 from google import genai
-import urllib.request
-import json
 import random
 
-# 1. قائمة أفلام أو جلب تلقائي (يمكنك إضافة أي أسماء أفلام هنا أو ربطها بـ RSS مجاني)
+# قائمة الأفلام (يمكنك ترك فيلم واحد فقط لو أردت تجربته الآن)
 MOVIES = [
     "Jurassic Reborn 2025",
     "Jurassic World Rebirth 2025",
@@ -16,7 +14,7 @@ MOVIES = [
     "Alien Romulus"
 ]
 
-VOICE = "ar-SA-HamedNeural"  # صوت عربي رجالي احترافي ومجاني من مايكروسوفت
+VOICE = "ar-SA-HamedNeural"  # صوت عربي رجالي احترافي ومجاني
 
 async def generate_voice(text, output_file="voice.mp3"):
     communicate = edge_tts.Communicate(text, VOICE, rate="+5%")
@@ -31,31 +29,30 @@ def generate_script(movie_name):
     اكتب النص العربي الذي سيُقرأ فقط بدون أي مقدمات أو توجيهات إخراجية أو رموز.
     """
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.8-flash",  # تم التحديث إلى النموذج الجديد المعتمد
         contents=prompt,
     )
     return response.text.strip()
 
 def download_trailer(movie_name):
-    # تحميل أول إعلان رسمي للفيلم من يوتيوب بجودة مناسبة
     search_query = f"ytsearch1:{movie_name} official trailer"
     cmd = [
         "yt-dlp",
-        "-f", "bestvideo[height<=720][ext=mp4]/best[ext=mp4]",
-        "--match-filter", "duration < 240",
+        "-f", "best[height<=720][ext=mp4]/best[ext=mp4]/best",
+        "--extractor-args", "youtube:player_client=android,web",
+        "--max-filesize", "50M",
         "-o", "trailer.mp4",
         search_query
     ]
     subprocess.run(cmd, check=True)
 
 def create_short():
-    # قص الفيديو طولياً 9:16، تخطي أول 10 ثوانٍ من الإعلان، ودمجه مع الصوت العربي
     cmd = [
         "ffmpeg", "-y",
-        "-ss", "00:00:10",
+        "-ss", "00:00:08",
         "-i", "trailer.mp4",
         "-i", "voice.mp3",
-        "-filter_complex", "[0:v]scale=-1:1280,crop=720:1280,eq=contrast=1.05:saturation=1.1[v]",
+        "-filter_complex", "[0:v]scale=-2:1280,crop=720:1280,eq=contrast=1.05:saturation=1.1[v]",
         "-map", "[v]",
         "-map", "1:a",
         "-c:v", "libx264",
