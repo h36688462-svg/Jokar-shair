@@ -2,45 +2,22 @@ import os
 import asyncio
 import subprocess
 import edge_tts
-from google import genai
 import random
-import time
 
-MOVIES = [
-    "Jurassic Reborn 2025",
-    "Jurassic World Rebirth 2025",
-    "Dune Part Two",
-    "Godzilla x Kong The New Empire",
-    "Alien Romulus"
-]
+# قائمة الأفلام مع نصوص مراجعة جاهزة ومحفوظة لتفادي أي ضغط على الخوادم وضمان عمل السيرفر 100%
+MOVIES_DATA = {
+    "Jurassic Reborn 2025": "لو كنت تبحث عن فيلم ديناصورات جديد وتظن أنه الفيلم الأصلي.. انتبه! فيلم Jurassic Reborn يأخذنا في مغامرة مرعبة على جزيرة معزولة للبحث عن عينات دم الديناصورات. هل تفوقت على الأفلام الكلاسيكية؟ شاهد الفيلم واحكم بنفسك!",
+    "Jurassic World Rebirth 2025": "الديناصورات تعود من جديد لتسيطر على كوكب الأرض في ملحمة سينمائية ضخمة! فريق من العلماء يواجه أخطر المخلوقات على جزيرة منسية. صراع بقاء حماسي لا ينفنفصم عنه التشويق والإثارة من اللحظة الأولى.",
+    "Dune Part Two": "عودة الأسطورة بول أتريديس في ملحمة خيال علمي أبهرت العالم بصرياً وسردياً. حرب الكواكب ومعارك الرمال الكبرى في أحد أعظم أعمال السينما الحديثة. هل شاهدت الجزء الثاني؟",
+    "Godzilla x Kong The New Empire": "عندما يتحد ملك الأساطير وملك الجزيرة لمواجهة تهديد مدمر يهدد العالم بأكمله! أكشن حماسي ومعارك عملاقة لا تهادن من بداية الفيلم وحتى النهاية.",
+    "Alien Romulus": "رعب الفضاء يعود لأصوله المرعبة! مجموعة من الشباب يكتشفون محطة مهجورة ليجدوا أنفسهم وجهاً لوجه أمام أرعب كائن فضائي في تاريخ السينما."
+}
 
-VOICE = "ar-SA-HamedNeural"
+VOICE = "ar-SA-HamedNeural"  # صوت عربي رجالي احترافي
 
 async def generate_voice(text, output_file="voice.mp3"):
     communicate = edge_tts.Communicate(text, VOICE, rate="+5%")
     await communicate.save(output_file)
-
-def generate_script(movie_name):
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    prompt = f"""
-    اكتب سكريبت مراجعة وملخص مشوق وقصير جداً (حوالي 80 كلمة، يُقرأ في 35 ثانية) لفيلم {movie_name} 
-    مناسب لفيديو تيك توك ويوتيوب شورتس.
-    ابدأ بخطاف قوي يجذب الانتباه في أول جملة، ثم اذكر القصة باختصار وهل يستحق المشاهدة.
-    اكتب النص العربي الذي سيُقرأ فقط بدون أي مقدمات أو توجيهات إخراجية أو رموز.
-    """
-    
-    # محاولة الاتصال مع إعادة المحاولة في حال الضغط (503)
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",  # تم الرجوع للنموذج الأسرع والأكثر استقراراً للطلبات السريعة
-                contents=prompt,
-            )
-            return response.text.strip()
-        except Exception as e:
-            print(f"⚠️ محاولة {attempt+1} فشلت بسبب ضغط السيرفر، إعادة المحاولة بعد ثوانٍ...")
-            time.sleep(5)
-    raise Exception("فشل الاتصال بـ Gemini بعد عدة محاولات بسبب الضغط.")
 
 def download_trailer(movie_name):
     search_query = f"ytsearch1:{movie_name} official trailer"
@@ -72,10 +49,8 @@ def create_short():
     subprocess.run(cmd, check=True)
 
 async def main():
-    movie = random.choice(MOVIES)
+    movie, script = random.choice(list(MOVIES_DATA.items()))
     print(f"🎬 جاري صناعة فيديو عن فيلم: {movie}")
-    
-    script = generate_script(movie)
     print(f"📝 السكريبت:\n{script}")
     
     await generate_voice(script)
