@@ -1,56 +1,61 @@
 import os
-import asyncio
 import subprocess
-import edge_tts
 import random
 
-FOREIGN_MOVIES = ["Jurassic Reborn 2025", "Avatar 3", "Dune Part Two", "Godzilla x Kong", "Alien Romulus"]
-ARABIC_MOVIES = ["ولاد رزق 3", "السرب", "الإسكندراني", "بيت الروبي", "عصابة الماكس"]
-SERIES_LIST = ["مسلسل لعبة الحبار", "مسلسل صراع العروش", "مسلسل بريزون بريك"]
-MATCHES_LIST = ["قمة ريال مدريد وبرشلونة", "دوري أبطال أوروبا", "قمة الدوري الإنجليزي"]
+# قائمة لأبرز الأفلام والمسلسلات لجلب إعلاناتها السينمائية الحقيقية
+MOVIES_AND_SERIES = [
+    "Dune Part Two official trailer",
+    "Godzilla x Kong official trailer",
+    "Avatar 3 official trailer",
+    "Squid Game official trailer",
+    "Interstellar official trailer",
+    "The Batman official trailer",
+    "Stranger Things trailer"
+]
 
-VOICE = "ar-SA-HamedNeural"
+def download_and_process_trailer():
+    # اختيار فيلم أو مسلسل بشكل عشوائي
+    target = random.choice(MOVIES_AND_SERIES)
+    print(f"🎬 جاري البحث وتحميل الإعلان الرسمي لـ: {target}")
 
-async def generate_voice(text, output_file="voice.mp3"):
-    communicate = edge_tts.Communicate(text, VOICE)
-    await communicate.save(output_file)
-
-def create_fast_video():
-    # إنشاء فيديو سريع جداً خلال ثوانٍ معدودة بدون أي عمليات معقدة
-    cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-i", "color=c=navy:s=720x1280:r=30",
-        "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-        "-t", "30",
-        "-c:v", "libx264", "-preset", "ultrafast",
-        "-c:a", "aac",
-        "-shortest", "final_short.mp4"
-    ]
-    subprocess.run(cmd, check=True)
-
-async def main():
-    category = random.choice(["foreign", "arabic", "series", "match"])
-    if category == "foreign":
-        item = random.choice(FOREIGN_MOVIES)
-        script = f"تابع فيلم {item} بجودة عالية وبدون إعلانات حصرياً عبر تطبيق Jokar TV. حمّل التطبيق الآن واستمتع بمشاهدة بلا حدود."
-    elif category == "arabic":
-        item = random.choice(ARABIC_MOVIES)
-        script = f"لا تفوت مشاهدة الفيلم العربي الرائع {item} بجودة عالية عبر منصة Jokar TV. حمّل التطبيق الآن!"
-    elif category == "series":
-        item = random.choice(SERIES_LIST)
-        script = f"تابع أحداث ومواسم {item} كاملة وبجودة فائقة عبر تطبيق Jokar TV على هاتفك أو شاشتك الذكية."
-    else:
-        item = random.choice(MATCHES_LIST)
-        script = f"عشاق المستديرة والكرة الأوروبية.. تابع أقوى المباريات والأحداث الرياضية مثل {item} بث مباشر عبر تطبيق Jokar TV!"
-
-    print(f"🎬 العنصر المختار: {item}")
+    search_query = f"ytsearch1:{target}"
     
-    with open("description.txt", "w", encoding="utf-8") as f:
-        f.write(f"{script}\n\n📲 حمّل تطبيق Jokar TV الآن:\n🌐 الموقع الرسمي: https://jokartv.com\n🍏 للايفون (App Store): https://apps.apple.com/app/id1628995509\n🤖 للاندرويد: متوفر حصرياً عبر موقعنا الرسمي\n\n#ملخصات_افلام #JokarTV #مباريات_اليوم #مسلسلات #تيك_توك_افلام #اكسبلور")
+    # 1. تحميل الإعلان الحقيقي بجودة عالية
+    cmd_download = [
+        "yt-dlp",
+        "-f", "bestvideo[height<=720][ext=mp4]/best[ext=mp4]/best",
+        "--extractor-args", "youtube:player_client=android,web",
+        "--max-filesize", "50M",
+        "-o", "raw_trailer.mp4",
+        search_query
+    ]
+    
+    try:
+        subprocess.run(cmd_download, check=True)
+    except Exception as e:
+        print(f"⚠️ فشل التحميل المباشر: {e}")
+        return
 
-    await generate_voice(script, "voice.mp3")
-    create_fast_video()
-    print("✅ تم الانتهاء بنجاح في وقت قياسي!")
+    # 2. استخدام FFmpeg لقص الفيديو وتحويله إلى مقاس طولي (9:16) بدون صوت مبدئياً
+    print("✂️ جاري قص الفيديو ومعالجته لمقاس شورتس وريلز (9:16)...")
+    cmd_crop = [
+        "ffmpeg", "-y",
+        "-i", "raw_trailer.mp4",
+        "-ss", "00:00:05",  # البدء بعد 5 ثوانٍ لتجاوز الشعار والمقدمة
+        "-to", "00:00:30",  # جعل مدة الفيديو 25 ثانية فقط (مثالي للتيك توك والريلز)
+        "-vf", "scale=1280:720:force_original_aspect_ratio=increase,crop=720:1280",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-an",  # كتم الصوت الأصلي مبدئياً (بدون تعليق صوتي)
+        "final_short.mp4"
+    ]
+    subprocess.run(cmd_crop, check=True)
+    
+    # حفظ وصف تسويقي جاهز للنسخ لنشر الفيديو مع روابط Jokar TV
+    with open("description.txt", "w", encoding="utf-8") as f:
+        f.write("🔥 لا تفوت مشاهدة أقوى الأفلام والمسلسلات بجودة عالية وبدون إعلانات حصرياً عبر تطبيق Jokar TV!\n\n📲 حمّل التطبيق الآن:\n🌐 الموقع الرسمي: https://jokartv.com\n🍏 للايفون (App Store): https://apps.apple.com/app/id1628995509\n\n#ملخصات_افلام #JokarTV #افلام #مسلسلات #اكسبلور #تيك_توك")
+
+    print("✅ تم تجهيز الفيديو الحقيقي والاحترافي بنجاح!")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    download_and_process_trailer()
